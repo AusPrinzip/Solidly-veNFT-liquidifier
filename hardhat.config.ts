@@ -7,9 +7,8 @@ import * as tenderly from "@tenderly/hardhat-tenderly";
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
-      {
-        version: "0.8.28",
-      }
+      {version: "0.8.28",},
+      {version: "0.8.13",},
     ],
   },
   networks: {
