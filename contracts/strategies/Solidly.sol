@@ -15,7 +15,6 @@ contract SolidlyStrategy {
     using SafeERC20 for IERC20;
     using Address for address;
 
-    string public __NAME__;
     struct VoteInfo {
         address[] pairs;
         uint256[] weights;
@@ -29,7 +28,6 @@ contract SolidlyStrategy {
     address public voter;
     address public rewardDistributor;
     address public externalDistributor;
-    address public owner;
 
     uint256 public tokenId;
     uint256 public MAX_TIME;
@@ -42,7 +40,6 @@ contract SolidlyStrategy {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     constructor(
-        string memory _name,
         address _token,
         address _veNFT,
         address _voter,
@@ -50,9 +47,6 @@ contract SolidlyStrategy {
         address _externalDistributor,
         uint _lockingYear   // eg.: crv = 4, lqdr = 2
     ) {
-        __NAME__ = _name;
-        owner = msg.sender;
-
         token = _token;
         veNFT = _veNFT;
         require(_token == IVotingEscrow(veNFT).token(), 'not same token');
@@ -86,21 +80,14 @@ contract SolidlyStrategy {
         -------------------
     */
 
-    function setLiquidToken (address _liquidToken) external onlyVoter {
-        require(_liquidToken != address(0), 'addr 0');
+    function setLiquidToken (address _liquidToken) external {
+        require(liquidToken == address(0), 'addr 0');
         liquidToken = _liquidToken;
     }
 
     function setVoter(address _voter) external onlyVoter {
         require(_voter != address(0), 'addr 0');
         voter = _voter;
-    }
-
-    function transferOwnership(address newOwner) external onlyVoter {
-        require(newOwner != address(0), "New owner is the zero address");
-        address oldOwner = owner;
-        owner = newOwner;
-        emit OwnershipTransferred(oldOwner, newOwner);
     }
 
     /*  
