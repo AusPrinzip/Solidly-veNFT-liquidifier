@@ -1,4 +1,5 @@
 const { ethers } = require("hardhat");
+const addr = require('./addresses.json')
 
 async function deployOne(contractName, ...args) {
   console.log("Deploying "+contractName+"...");
@@ -11,14 +12,17 @@ async function deployOne(contractName, ...args) {
 }
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
-  console.log(deployer)
+  const signers = await ethers.getSigners();
+  const deployer = signers[0]
+  const vault = signers[1]
   console.log("Deploying contracts with account:", deployer.address);
+  console.log("Vaulting with account:", vault.address)
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("Account balance:", balance.toString());
 
   try {
-    await deployOne("LiquidToken", "Liquid TOK", "liTOK", deployer.address)
+    console.log("LiquidToken", "liTOK", addr.veTHE, vault.address)
+    await deployOne("LiquidToken", "LiquidToken", "liTOK", addr.veTHE, vault.address)
   } catch (error) {
     console.error("Error during deployment:", error);
     process.exit(1);
