@@ -161,16 +161,10 @@ contract LiveTheStrategy {
 
     function claimFees(address[] memory _fees, address[][] memory _tokens) external {
         IVoter(thenaVoter).claimFees(_fees, _tokens, tokenId);
-        
-        // Flatten the 2D array of tokens and send all balances
-        for(uint i = 0; i < _tokens.length; i++) {
-            sendAllToRewardDistributor(_tokens[i]);
-        }
     }
 
     function claimRebase() external {
         IRewardsDistributor(thenaRewardsDistributor).claim(tokenId);
-        _resetVote();
     }
 
     function sendAllToRewardDistributor(address[] memory _tokens) public {
@@ -238,11 +232,7 @@ contract LiveTheStrategy {
         IVotingEscrow(veThe).transferFrom(address(this), _to, _tokenId1);
     }
 
-    function _resetVote() internal {
+    function resetVote() external onlyVoter {
         IVoter(thenaVoter).reset(tokenId);
-    }
-
-    function resetVote() external {
-        _resetVote();
     }
 }
