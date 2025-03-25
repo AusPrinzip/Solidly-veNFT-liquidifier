@@ -1,4 +1,4 @@
-pragma solidity 0.8.13;
+pragma solidity 0.8.28;
 
 interface IVoter {
     function ve() external view returns (address);

@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IVotingEscrow.sol";
 import "./interfaces/IVoter.sol";
 import "./interfaces/IRewardsDistributor.sol";
-import "./interfaces/ILiveTheManager.sol";
+// import "./interfaces/ILiveTheManager.sol";
 
 contract LiveTheStrategy is Ownable {
     using SafeERC20 for IERC20;
@@ -197,10 +197,10 @@ contract LiveTheStrategy is Ownable {
 
         lastVote = _lastVote;
 
-        ILiveTheManager(liveTheManager).disableRedeem();
+        // ILiveTheManager(liveTheManager).disableRedeem();
 
-        tokenIdAt[ILiveTheManager(liveTheManager).getCurrentEpoch()] = tokenId;
-        voteInfoAt[ILiveTheManager(liveTheManager).getCurrentEpoch()] = lastVote;
+        // tokenIdAt[ILiveTheManager(liveTheManager).getCurrentEpoch()] = tokenId;
+        // voteInfoAt[ILiveTheManager(liveTheManager).getCurrentEpoch()] = lastVote;
     }
 
     function merge(uint256 from) external restricted {
