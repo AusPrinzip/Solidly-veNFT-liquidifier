@@ -4,14 +4,14 @@ pragma solidity 0.8.28;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+// Removed Ownable import
 
 import "./interfaces/IVotingEscrow.sol";
 import "./interfaces/IVoter.sol";
 import "./interfaces/IRewardsDistributor.sol";
 // import "./interfaces/ILiveTheManager.sol";
 
-contract LiveTheStrategy is Ownable {
+contract LiveTheStrategy {
     using SafeERC20 for IERC20;
     using Address for address;
 
@@ -29,6 +29,7 @@ contract LiveTheStrategy is Ownable {
     address public thenaVoter;
     address public feeManager;
     address public thenaRewardsDistributor;
+    address public owner;
 
     uint256 public tokenId;
     uint256 public MAX_TIME;
@@ -38,6 +39,7 @@ contract LiveTheStrategy is Ownable {
     mapping(uint256 => VoteInfo) voteInfoAt;
 
     event Merge(uint256 indexed from);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     constructor(
         string memory _name,
@@ -47,8 +49,9 @@ contract LiveTheStrategy is Ownable {
         address _feeManager,
         address _thenaRewardsDistributor,
         uint _lockingYear   // eg.: crv = 4, lqdr = 2
-    ) Ownable() {
+    ) {
         __NAME__ = _name;
+        owner = msg.sender;
 
         thena = _thena;
         veThe = _veThe;
@@ -63,12 +66,17 @@ contract LiveTheStrategy is Ownable {
     }
 
     modifier restricted {
-        require(msg.sender == owner() || msg.sender == liveTheManager, "Auth failed");
+        require(msg.sender == liveTheManager, "Auth failed");
         _;
     }
 
     modifier onlyVoter {
         require(msg.sender == thenaVoter, "Only voter can call");
+        _;
+    }
+
+    modifier onlyOwner {
+        require(msg.sender == owner, "Only owner can call");
         _;
     }
 
@@ -85,6 +93,13 @@ contract LiveTheStrategy is Ownable {
     function setVoter(address _voter) external onlyOwner {
         require(_voter != address(0), 'addr 0');
         thenaVoter = _voter;
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "New owner is the zero address");
+        address oldOwner = owner;
+        owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
     }
 
     /*  
@@ -117,7 +132,7 @@ contract LiveTheStrategy is Ownable {
         IVotingEscrow(veThe).increase_unlock_time(tokenId, _unlockTime);
     }
 
-    function increaseTime(uint256 _unlockTime) external onlyOwner {
+    function increaseTime(uint256 _unlockTime) external {
         _increaseTime(_unlockTime);
     }
 
@@ -239,7 +254,7 @@ contract LiveTheStrategy is Ownable {
         IVoter(thenaVoter).reset(tokenId);
     }
 
-    function resetVote() external onlyOwner {
+    function resetVote() external {
         _resetVote();
     }
 }
