@@ -11,7 +11,7 @@ import "../interfaces/IVoter.sol";
 import "../interfaces/IRewardsDistributor.sol";
 // import "./interfaces/ILiveTheManager.sol";
 
-contract LiveTheStrategy {
+contract SolidlyStrategy {
     using SafeERC20 for IERC20;
     using Address for address;
 
@@ -43,7 +43,6 @@ contract LiveTheStrategy {
 
     constructor(
         string memory _name,
-        address _liquidToken,
         address _token,
         address _veNFT,
         address _voter,
@@ -54,7 +53,6 @@ contract LiveTheStrategy {
         __NAME__ = _name;
         owner = msg.sender;
 
-        liquidToken = _liquidToken;
         token = _token;
         veNFT = _veNFT;
         require(_token == IVotingEscrow(veNFT).token(), 'not same token');
@@ -87,6 +85,11 @@ contract LiveTheStrategy {
         Setters
         -------------------
     */
+
+    function setLiquidToken (address _liquidToken) external onlyVoter {
+        require(_liquidToken != address(0), 'addr 0');
+        liquidToken = _liquidToken;
+    }
 
     function setVoter(address _voter) external onlyVoter {
         require(_voter != address(0), 'addr 0');
