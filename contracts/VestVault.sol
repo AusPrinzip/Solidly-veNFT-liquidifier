@@ -152,47 +152,38 @@ contract LiveTheStrategy {
         address[][] memory _tokens
     ) external {
         IVoter(thenaVoter).claimBribes(_bribes, _tokens, tokenId);
-        uint256 i = 0;
-        uint256 k = 0;
-        uint256 _len1 = _bribes.length;
-        uint256 _len2;
-        uint256 _amount = 0;
-        address _token;
-        for(i; i < _len1; i++){
-            _len2 = _tokens[i].length;
-            for(k = 0; k < _len2; k++){
-                _token = _tokens[i][k];
-                _amount = IERC20(_token).balanceOf(address(this));
-                if(_amount > 0){
-                    IERC20(_token).safeTransfer(rewardDistributor, _amount);
-                }
-            }
+        
+        // Flatten the 2D array of tokens and send all balances
+        for(uint i = 0; i < _tokens.length; i++) {
+            sendAllToRewardDistributor(_tokens[i]);
         }
     }
 
     function claimFees(address[] memory _fees, address[][] memory _tokens) external {
         IVoter(thenaVoter).claimFees(_fees, _tokens, tokenId);
-        uint256 i = 0;
-        uint256 k = 0;
-        uint256 _len1 = _fees.length;
-        uint256 _len2;
-        uint256 _amount = 0;
-        address _token;
-        for(i; i < _len1; i++){
-            _len2 = _tokens[i].length;
-            for(k = 0; k < _len2; k++){
-                _token = _tokens[i][k];
-                _amount = IERC20(_token).balanceOf(address(this));
-                if(_amount > 0){
-                    IERC20(_token).safeTransfer(rewardDistributor, _amount);
-                }
-            }
+        
+        // Flatten the 2D array of tokens and send all balances
+        for(uint i = 0; i < _tokens.length; i++) {
+            sendAllToRewardDistributor(_tokens[i]);
         }
     }
 
     function claimRebase() external {
         IRewardsDistributor(thenaRewardsDistributor).claim(tokenId);
         _resetVote();
+    }
+
+    function sendAllToRewardDistributor(address[] memory _tokens) public {
+        uint256 i = 0;
+        uint256 _amount = 0;
+        address _token;
+        for(i; i < _tokens.length; i++){
+            _token = _tokens[i];
+            _amount = IERC20(_token).balanceOf(address(this));
+            if(_amount > 0){
+                IERC20(_token).safeTransfer(rewardDistributor, _amount);
+            }
+        }
     }
 
     function vote(address[] calldata _pool, uint256[] calldata _weights) external onlyVoter {
