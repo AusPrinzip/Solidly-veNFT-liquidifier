@@ -29,9 +29,9 @@ contract LiquidToken is ERC20 {
         _mint(msg.sender, 10**18);
     }
 
-    // the vault needs to approve the LiquidToken
-    function redeem(uint256 _tokenId, uint256 _amount) external {
-        _burn(msg.sender, _amount);
+    // the vault needs to approveAll the LiquidToken
+    function redeem(uint256 _tokenId) external {
+        _burn(msg.sender, 10**18);
         IVotingEscrow(veNFT).transferFrom(vault, msg.sender, _tokenId);
     }
 
