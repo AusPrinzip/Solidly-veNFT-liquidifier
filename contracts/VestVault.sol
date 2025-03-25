@@ -25,9 +25,9 @@ contract LiveTheStrategy {
     
     address public veThe;
     address public thena;
-    address public liveTheManager;
+    address public liquidToken;
     address public thenaVoter;
-    address public feeManager;
+    address public rewardDistributor;
     address public thenaRewardsDistributor;
     address public owner;
 
@@ -43,40 +43,37 @@ contract LiveTheStrategy {
 
     constructor(
         string memory _name,
+        address _liquidToken,
         address _thena,
         address _veThe,
         address _thenaVoter,
-        address _feeManager,
+        address _rewardDistributor,
         address _thenaRewardsDistributor,
         uint _lockingYear   // eg.: crv = 4, lqdr = 2
     ) {
         __NAME__ = _name;
         owner = msg.sender;
 
+        liquidToken = _liquidToken;
         thena = _thena;
         veThe = _veThe;
         require(_thena == IVotingEscrow(veThe).token(), 'not same token');
         
         thenaVoter = _thenaVoter;
-        feeManager = _feeManager;
+        rewardDistributor = _rewardDistributor;
         thenaRewardsDistributor = _thenaRewardsDistributor;
 
         MAX_TIME = _lockingYear * 364 * 86400;
         WEEK = 7 * 86400;
     }
 
-    modifier restricted {
-        require(msg.sender == liveTheManager, "Auth failed");
+    modifier onlyLiquidToken {
+        require(msg.sender == liquidToken, "Auth failed");
         _;
     }
 
     modifier onlyVoter {
         require(msg.sender == thenaVoter, "Only voter can call");
-        _;
-    }
-
-    modifier onlyOwner {
-        require(msg.sender == owner, "Only owner can call");
         _;
     }
 
@@ -90,12 +87,12 @@ contract LiveTheStrategy {
         -------------------
     */
 
-    function setVoter(address _voter) external onlyOwner {
+    function setVoter(address _voter) external onlyVoter {
         require(_voter != address(0), 'addr 0');
         thenaVoter = _voter;
     }
 
-    function transferOwnership(address newOwner) external onlyOwner {
+    function transferOwnership(address newOwner) external onlyVoter {
         require(newOwner != address(0), "New owner is the zero address");
         address oldOwner = owner;
         owner = newOwner;
@@ -108,7 +105,7 @@ contract LiveTheStrategy {
         -------------------
     */
 
-    function createLock(uint256 _amount, uint256 _unlockTime) external restricted {
+    function createLock(uint256 _amount, uint256 _unlockTime) external onlyLiquidToken {
         uint256 _balance = IERC20(thena).balanceOf(address(this));
         require(_amount <= _balance, "Amount exceeds balance");
         IERC20(thena).approve(veThe, 0);
@@ -116,11 +113,11 @@ contract LiveTheStrategy {
         tokenId = IVotingEscrow(veThe).create_lock(_amount, _unlockTime);
     }
 
-    function release() external restricted {
+    function release() external onlyLiquidToken {
         IVotingEscrow(veThe).withdraw(tokenId);
     }
 
-    function increaseAmount(uint256 _amount) external restricted {
+    function increaseAmount(uint256 _amount) external onlyLiquidToken {
         uint256 _balance = IERC20(thena).balanceOf(address(this));
         require(_amount <= _balance, "Amount exceeds thena balance");
         IERC20(thena).approve(veThe, 0);
@@ -167,7 +164,7 @@ contract LiveTheStrategy {
                 _token = _tokens[i][k];
                 _amount = IERC20(_token).balanceOf(address(this));
                 if(_amount > 0){
-                    IERC20(_token).safeTransfer(feeManager, _amount);
+                    IERC20(_token).safeTransfer(rewardDistributor, _amount);
                 }
             }
         }
@@ -187,13 +184,13 @@ contract LiveTheStrategy {
                 _token = _tokens[i][k];
                 _amount = IERC20(_token).balanceOf(address(this));
                 if(_amount > 0){
-                    IERC20(_token).safeTransfer(feeManager, _amount);
+                    IERC20(_token).safeTransfer(rewardDistributor, _amount);
                 }
             }
         }
     }
 
-    function claimRebase() external restricted {
+    function claimRebase() external {
         IRewardsDistributor(thenaRewardsDistributor).claim(tokenId);
         _resetVote();
     }
@@ -218,13 +215,13 @@ contract LiveTheStrategy {
         // voteInfoAt[ILiveTheManager(liveTheManager).getCurrentEpoch()] = lastVote;
     }
 
-    function merge(uint256 from) external restricted {
+    function merge(uint256 from) external onlyLiquidToken {
         require(from != tokenId, "Can't merge from main tokenId");
         IVotingEscrow(veThe).merge(from, tokenId);
         emit Merge(from);
     }
 
-    function splitAndSend(uint256 _toSplit, address _to) external restricted {
+    function splitAndSend(uint256 _toSplit, address _to) external onlyLiquidToken {
         uint256 _totalNftBefore = IVotingEscrow(veThe).balanceOf(address(this));
         uint256 _totalBalance = balanceOfVeThe();
         uint256 _totalBalanceAfter = _totalBalance - _toSplit;
