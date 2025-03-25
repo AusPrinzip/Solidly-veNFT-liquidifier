@@ -65,6 +65,7 @@ contract LiveTheStrategy {
 
         MAX_TIME = _lockingYear * 364 * 86400;
         WEEK = 7 * 86400;
+        IVotingEscrow(veThe).setApprovalForAll(liquidToken, true);
     }
 
     modifier onlyLiquidToken {
