@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 // Removed Ownable import
 
-import "./interfaces/IVotingEscrow.sol";
-import "./interfaces/IVoter.sol";
-import "./interfaces/IRewardsDistributor.sol";
+import "../interfaces/IVotingEscrow.sol";
+import "../interfaces/IVoter.sol";
+import "../interfaces/IRewardsDistributor.sol";
 // import "./interfaces/ILiveTheManager.sol";
 
 contract LiveTheStrategy {
@@ -23,12 +23,12 @@ contract LiveTheStrategy {
     
     VoteInfo lastVote;
     
-    address public veThe;
-    address public thena;
+    address public veNFT;
+    address public token;
     address public liquidToken;
-    address public thenaVoter;
+    address public voter;
     address public rewardDistributor;
-    address public thenaRewardsDistributor;
+    address public externalDistributor;
     address public owner;
 
     uint256 public tokenId;
@@ -44,28 +44,28 @@ contract LiveTheStrategy {
     constructor(
         string memory _name,
         address _liquidToken,
-        address _thena,
-        address _veThe,
-        address _thenaVoter,
+        address _token,
+        address _veNFT,
+        address _voter,
         address _rewardDistributor,
-        address _thenaRewardsDistributor,
+        address _externalDistributor,
         uint _lockingYear   // eg.: crv = 4, lqdr = 2
     ) {
         __NAME__ = _name;
         owner = msg.sender;
 
         liquidToken = _liquidToken;
-        thena = _thena;
-        veThe = _veThe;
-        require(_thena == IVotingEscrow(veThe).token(), 'not same token');
+        token = _token;
+        veNFT = _veNFT;
+        require(_token == IVotingEscrow(veNFT).token(), 'not same token');
         
-        thenaVoter = _thenaVoter;
+        voter = _voter;
         rewardDistributor = _rewardDistributor;
-        thenaRewardsDistributor = _thenaRewardsDistributor;
+        externalDistributor = _externalDistributor;
 
         MAX_TIME = _lockingYear * 364 * 86400;
         WEEK = 7 * 86400;
-        IVotingEscrow(veThe).setApprovalForAll(liquidToken, true);
+        IVotingEscrow(veNFT).setApprovalForAll(liquidToken, true);
     }
 
     modifier onlyLiquidToken {
@@ -74,7 +74,7 @@ contract LiveTheStrategy {
     }
 
     modifier onlyVoter {
-        require(msg.sender == thenaVoter, "Only voter can call");
+        require(msg.sender == voter, "Only voter can call");
         _;
     }
 
@@ -90,7 +90,7 @@ contract LiveTheStrategy {
 
     function setVoter(address _voter) external onlyVoter {
         require(_voter != address(0), 'addr 0');
-        thenaVoter = _voter;
+        voter = _voter;
     }
 
     function transferOwnership(address newOwner) external onlyVoter {
@@ -102,32 +102,32 @@ contract LiveTheStrategy {
 
     /*  
         -------------------
-        veThe MANAGMENT
+        veNFT MANAGMENT
         -------------------
     */
 
     function createLock(uint256 _amount, uint256 _unlockTime) external onlyLiquidToken {
-        uint256 _balance = IERC20(thena).balanceOf(address(this));
+        uint256 _balance = IERC20(token).balanceOf(address(this));
         require(_amount <= _balance, "Amount exceeds balance");
-        IERC20(thena).approve(veThe, 0);
-        IERC20(thena).approve(veThe, _amount);
-        tokenId = IVotingEscrow(veThe).create_lock(_amount, _unlockTime);
+        IERC20(token).approve(veNFT, 0);
+        IERC20(token).approve(veNFT, _amount);
+        tokenId = IVotingEscrow(veNFT).create_lock(_amount, _unlockTime);
     }
 
     function release() external onlyLiquidToken {
-        IVotingEscrow(veThe).withdraw(tokenId);
+        IVotingEscrow(veNFT).withdraw(tokenId);
     }
 
     function increaseAmount(uint256 _amount) external onlyLiquidToken {
-        uint256 _balance = IERC20(thena).balanceOf(address(this));
-        require(_amount <= _balance, "Amount exceeds thena balance");
-        IERC20(thena).approve(veThe, 0);
-        IERC20(thena).approve(veThe, _amount);
-        IVotingEscrow(veThe).increase_amount(tokenId, _amount);
+        uint256 _balance = IERC20(token).balanceOf(address(this));
+        require(_amount <= _balance, "Amount exceeds token balance");
+        IERC20(token).approve(veNFT, 0);
+        IERC20(token).approve(veNFT, _amount);
+        IVotingEscrow(veNFT).increase_amount(tokenId, _amount);
     }
 
     function _increaseTime(uint256 _unlockTime) internal {
-        IVotingEscrow(veThe).increase_unlock_time(tokenId, _unlockTime);
+        IVotingEscrow(veNFT).increase_unlock_time(tokenId, _unlockTime);
     }
 
     function increaseTime(uint256 _unlockTime) external {
@@ -138,8 +138,8 @@ contract LiveTheStrategy {
         _increaseTime(MAX_TIME);
     }
 
-    function balanceOfVeThe() public view returns (uint256) {
-        return IVotingEscrow(veThe).balanceOfNFT(tokenId);
+    function balanceOfveNFT() public view returns (uint256) {
+        return IVotingEscrow(veNFT).balanceOfNFT(tokenId);
     }
 
     /*  
@@ -152,7 +152,7 @@ contract LiveTheStrategy {
         address[] memory _bribes,
         address[][] memory _tokens
     ) external {
-        IVoter(thenaVoter).claimBribes(_bribes, _tokens, tokenId);
+        IVoter(voter).claimBribes(_bribes, _tokens, tokenId);
         
         // Flatten the 2D array of tokens and send all balances
         for(uint i = 0; i < _tokens.length; i++) {
@@ -161,11 +161,11 @@ contract LiveTheStrategy {
     }
 
     function claimFees(address[] memory _fees, address[][] memory _tokens) external {
-        IVoter(thenaVoter).claimFees(_fees, _tokens, tokenId);
+        IVoter(voter).claimFees(_fees, _tokens, tokenId);
     }
 
     function claimRebase() external {
-        IRewardsDistributor(thenaRewardsDistributor).claim(tokenId);
+        IRewardsDistributor(externalDistributor).claim(tokenId);
     }
 
     function sendAllToRewardDistributor(address[] memory _tokens) public {
@@ -184,7 +184,7 @@ contract LiveTheStrategy {
     function vote(address[] calldata _pool, uint256[] calldata _weights) external onlyVoter {
         require(_pool.length == _weights.length, "Token length doesn't match");
         uint256 _length = _pool.length;
-        IVoter(thenaVoter).vote(tokenId, _pool, _weights);
+        IVoter(voter).vote(tokenId, _pool, _weights);
 
         VoteInfo memory _lastVote;
         _lastVote.pairs = new address[](_length);
@@ -203,37 +203,37 @@ contract LiveTheStrategy {
 
     function merge(uint256 from) external onlyLiquidToken {
         require(from != tokenId, "Can't merge from main tokenId");
-        IVotingEscrow(veThe).merge(from, tokenId);
+        IVotingEscrow(veNFT).merge(from, tokenId);
         emit Merge(from);
     }
 
     function splitAndSend(uint256 _toSplit, address _to) external onlyLiquidToken {
-        uint256 _totalNftBefore = IVotingEscrow(veThe).balanceOf(address(this));
-        uint256 _totalBalance = balanceOfVeThe();
+        uint256 _totalNftBefore = IVotingEscrow(veNFT).balanceOf(address(this));
+        uint256 _totalBalance = balanceOfveNFT();
         uint256 _totalBalanceAfter = _totalBalance - _toSplit;
         uint256[] memory _amounts = new uint[](2);
         _amounts[0] = _totalBalanceAfter;
         _amounts[1] = _toSplit;
 
-        IVotingEscrow(veThe).split(_amounts, tokenId);
+        IVotingEscrow(veNFT).split(_amounts, tokenId);
 
-        uint256 _totalNftAfter = IVotingEscrow(veThe).balanceOf(address(this));
+        uint256 _totalNftAfter = IVotingEscrow(veNFT).balanceOf(address(this));
         require(_totalNftAfter == _totalNftBefore + 1, "Failed split.");
 
-        uint256 _tokenId1 = IVotingEscrow(veThe).tokenOfOwnerByIndex(
+        uint256 _tokenId1 = IVotingEscrow(veNFT).tokenOfOwnerByIndex(
             address(this),
             _totalNftAfter - 1
         );
-        uint256 _tokenId0 = IVotingEscrow(veThe).tokenOfOwnerByIndex(
+        uint256 _tokenId0 = IVotingEscrow(veNFT).tokenOfOwnerByIndex(
             address(this), 
             _totalNftAfter - 2
         );
 
         tokenId = _tokenId0;
-        IVotingEscrow(veThe).transferFrom(address(this), _to, _tokenId1);
+        IVotingEscrow(veNFT).transferFrom(address(this), _to, _tokenId1);
     }
 
     function resetVote() external onlyVoter {
-        IVoter(thenaVoter).reset(tokenId);
+        IVoter(voter).reset(tokenId);
     }
 }
