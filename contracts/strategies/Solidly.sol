@@ -260,9 +260,9 @@ contract SolidlyStrategy {
     }
 
     function _handleDeposit(uint256 _tokenId) external onlyLiquidToken {
-        // verifyy the token is not already owned by this contract
+        // verifyy the token is already owned by this contract
         address tokenOwner = IVotingEscrow(veNFT).ownerOf(_tokenId);
-        require(tokenOwner != address(this), "Token already owned by this contract");
+        require(tokenOwner == address(this), "Token not owned by this contract");
         
         // verify the token exists and get its age
         uint256 targetAgeWeeks = _getVeNFTAgeInWeeks(_tokenId);
@@ -272,12 +272,15 @@ contract SolidlyStrategy {
         uint256 ownedCount = IVotingEscrow(veNFT).balanceOf(address(this));
         
         // If we dont own any veNFTs yet, no merge, just keep the new veNFT as is
-        if (ownedCount == 0) return;
+        if (ownedCount <= 1) return;
         
         // find a NFT that is OLDER than deposited NFT by at most 1 week!!
         for (uint256 i = 0; i < ownedCount; i++) {
             uint256 currentTokenId = IVotingEscrow(veNFT).tokenOfOwnerByIndex(address(this), i);
             
+            // Skip the token we just deposited
+            if (currentTokenId == _tokenId) continue;
+
             // get age of the current token
             uint256 currentAgeWeeks = _getVeNFTAgeInWeeks(currentTokenId);
             
@@ -289,6 +292,7 @@ contract SolidlyStrategy {
                 // if age diference is <= 1 week, we have found our match
                 if (ageDifference <= 1) {
                     IVotingEscrow(veNFT).merge(currentTokenId, _tokenId);
+                    break;
                 }
             }
         }
