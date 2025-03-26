@@ -226,4 +226,16 @@ contract SolidlyStrategy {
     function resetVote() external onlyVoter {
         IVoter(voter).reset(tokenId);
     }
+
+
+    function getVeNFTAgeInWeeks(uint256 _tokenId) public view returns (uint256 ageInWeeks) {
+        // uint256 lockEndTime = IVotingEscrow(veNFT).locked__end(_tokenId);
+        uint256 creationTime = IVotingEscrow(veNFT).user_point_history__ts(_tokenId, 0);
+        require(creationTime > 0, "Invalid veNFT: creation time is zero");
+        uint256 currentTime = block.timestamp;
+        uint256 timeElapsed = currentTime > creationTime ? currentTime - creationTime : 0;
+        ageInWeeks = timeElapsed / WEEK;
+        
+        return ageInWeeks;
+    }
 }
