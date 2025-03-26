@@ -37,6 +37,7 @@ contract SolidlyStrategy {
     mapping(uint256 => VoteInfo) voteInfoAt;
 
     event Merge(uint256 indexed from);
+    event Split(uint256 indexed tokenId, uint256 amount, address to);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     constructor(
@@ -45,7 +46,7 @@ contract SolidlyStrategy {
         address _voter,
         address _rewardDistributor,
         address _externalDistributor,
-        uint _lockingYear   // eg.: crv = 4, lqdr = 2
+        uint _lockingYear  // eg.: crv = 4, lqdr = 2
     ) {
         token = _token;
         veNFT = _veNFT;
@@ -90,7 +91,7 @@ contract SolidlyStrategy {
         voter = _voter;
     }
 
-    /*  
+    /*    
         -------------------
         veNFT MANAGMENT
         -------------------
@@ -132,7 +133,7 @@ contract SolidlyStrategy {
         return IVotingEscrow(veNFT).balanceOfNFT(tokenId);
     }
 
-    /*  
+    /*    
         -------------------
         VOTING AND CLAIMING
         -------------------
@@ -197,36 +198,55 @@ contract SolidlyStrategy {
         emit Merge(from);
     }
 
-    function splitAndSend(uint256 _toSplit, address _to) external onlyLiquidToken {
-        uint256 _totalNftBefore = IVotingEscrow(veNFT).balanceOf(address(this));
-        uint256 _totalBalance = balanceOfveNFT();
-        uint256 _totalBalanceAfter = _totalBalance - _toSplit;
-        uint256[] memory _amounts = new uint[](2);
-        _amounts[0] = _totalBalanceAfter;
-        _amounts[1] = _toSplit;
-
-        IVotingEscrow(veNFT).split(_amounts, tokenId);
-
-        uint256 _totalNftAfter = IVotingEscrow(veNFT).balanceOf(address(this));
-        require(_totalNftAfter == _totalNftBefore + 1, "Failed split.");
-
-        uint256 _tokenId1 = IVotingEscrow(veNFT).tokenOfOwnerByIndex(
-            address(this),
-            _totalNftAfter - 1
-        );
-        uint256 _tokenId0 = IVotingEscrow(veNFT).tokenOfOwnerByIndex(
-            address(this), 
-            _totalNftAfter - 2
-        );
-
-        tokenId = _tokenId0;
-        IVotingEscrow(veNFT).transferFrom(address(this), _to, _tokenId1);
+    /**
+     * @dev Splits the main veNFT and transfers the new NFT to the specified recipient
+     * @param _amountToSplit The amount of underlying tokens to split off
+     * @param _recipient The address to receive the split NFT
+     * @return newTokenId The ID of the new NFT created by the split
+     */
+    function splitAndSend(uint256 _amountToSplit, address _recipient) external onlyLiquidToken returns (uint256 newTokenId) {
+        // Get the current balance of the main veNFT
+        uint256 totalBalance = balanceOfveNFT();
+        
+        // Ensure we're not trying to split more than available
+        require(_amountToSplit > 0 && _amountToSplit < totalBalance, "Invalid split amount");
+        
+        // Calculate remaining balance after split
+        uint256 remainingBalance = totalBalance - _amountToSplit;
+        
+        // Prepare the amounts array for the split
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = remainingBalance; // Amount to keep in the original NFT
+        amounts[1] = _amountToSplit;   // Amount to send to recipient
+        
+        // Count NFTs before split
+        uint256 nftCountBefore = IVotingEscrow(veNFT).balanceOf(address(this));
+        
+        // Execute the split
+        IVotingEscrow(veNFT).split(amounts, tokenId);
+        
+        // Count NFTs after split
+        uint256 nftCountAfter = IVotingEscrow(veNFT).balanceOf(address(this));
+        
+        // Verify split was successful
+        require(nftCountAfter == nftCountBefore + 1, "Split failed");
+        
+        // Get the IDs of the NFTs after split
+        // The original tokenId remains with the first amount, and a new NFT is created for the second amount
+        uint256 newNftIndex = nftCountAfter - 1; // Index of the newly created NFT
+        newTokenId = IVotingEscrow(veNFT).tokenOfOwnerByIndex(address(this), newNftIndex);
+        
+        // Transfer the new NFT to the recipient
+        IVotingEscrow(veNFT).transferFrom(address(this), _recipient, newTokenId);
+        
+        emit Split(tokenId, _amountToSplit, _recipient);
+        
+        return newTokenId;
     }
 
     function resetVote() external onlyVoter {
         IVoter(voter).reset(tokenId);
     }
-
 
     function _getVeNFTAgeInWeeks(uint256 _tokenId) private view returns (uint256 ageInWeeks) {
         // uint256 lockEndTime = IVotingEscrow(veNFT).locked__end(_tokenId);
