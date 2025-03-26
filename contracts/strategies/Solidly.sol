@@ -228,7 +228,7 @@ contract SolidlyStrategy {
     }
 
 
-    function getVeNFTAgeInWeeks(uint256 _tokenId) public view returns (uint256 ageInWeeks) {
+    function _getVeNFTAgeInWeeks(uint256 _tokenId) private view returns (uint256 ageInWeeks) {
         // uint256 lockEndTime = IVotingEscrow(veNFT).locked__end(_tokenId);
         uint256 creationTime = IVotingEscrow(veNFT).user_point_history__ts(_tokenId, 0);
         require(creationTime > 0, "Invalid veNFT: creation time is zero");
@@ -237,5 +237,44 @@ contract SolidlyStrategy {
         ageInWeeks = timeElapsed / WEEK;
         
         return ageInWeeks;
+    }
+
+    function _deposit(uint256 _tokenId) private {
+        // verifyy the token is not already owned by this contract
+        address tokenOwner = IVotingEscrow(veNFT).ownerOf(_tokenId);
+        require(tokenOwner != address(this), "Token already owned by this contract");
+        
+        // verify the token exists and get its age
+        uint256 targetAgeWeeks = _getVeNFTAgeInWeeks(_tokenId);
+        // uint256 targetLockEnd = IVotingEscrow(veNFT).locked__end(_tokenId);
+        
+        // get all veNFTs owned by this contract
+        uint256 ownedCount = IVotingEscrow(veNFT).balanceOf(address(this));
+        
+        // If we dont own any veNFTs yet, no merge just change expiration date to accomodate to our week system
+        if (ownedCount == 0) {
+            uint256 newLockDuration = WEEK;
+            IVotingEscrow(veNFT).increase_unlock_time(_tokenId, newLockDuration);
+        }
+        
+        // find a NFT that is OLDER than deposited NFT by at most 1 week!!
+        for (uint256 i = 0; i < ownedCount; i++) {
+            uint256 currentTokenId = IVotingEscrow(veNFT).tokenOfOwnerByIndex(address(this), i);
+            
+            // get age of the current token
+            uint256 currentAgeWeeks = _getVeNFTAgeInWeeks(currentTokenId);
+            
+            // we only consider tokens that are older than our deposit token
+            if (currentAgeWeeks > targetAgeWeeks) {
+                // Calculate age difference
+                uint256 ageDifference = currentAgeWeeks - targetAgeWeeks;
+                
+                // if age diference is <= 1 week, we have found our match
+                if (ageDifference <= 1) {
+                    IVotingEscrow(veNFT).merge(currentTokenId, _tokenId);
+                }
+            }
+        }
+        // In case no match where ageDifference <= 1, it just keeps the new veNFT "as is"
     }
 }
