@@ -118,6 +118,9 @@ contract LiquidToken is ERC20, Ownable {
         // Transfer the NFT to the vault
         IVotingEscrow(veNFT).transferFrom(msg.sender, vault, _tokenId);
         
+        // Call the strategy contract to handle age-bsaed merging
+        SolidlyStrategy(vault)._handleDeposit(_tokenId);
+
         // Update total underlying locked
         totalUnderlyingLocked += underlyingAmount;
         

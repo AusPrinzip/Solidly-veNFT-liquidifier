@@ -259,7 +259,7 @@ contract SolidlyStrategy {
         return ageInWeeks;
     }
 
-    function _deposit(uint256 _tokenId) private {
+    function _handleDeposit(uint256 _tokenId) external onlyLiquidToken {
         // verifyy the token is not already owned by this contract
         address tokenOwner = IVotingEscrow(veNFT).ownerOf(_tokenId);
         require(tokenOwner != address(this), "Token already owned by this contract");
