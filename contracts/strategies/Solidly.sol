@@ -251,11 +251,8 @@ contract SolidlyStrategy {
         // get all veNFTs owned by this contract
         uint256 ownedCount = IVotingEscrow(veNFT).balanceOf(address(this));
         
-        // If we dont own any veNFTs yet, no merge just change expiration date to accomodate to our week system
-        if (ownedCount == 0) {
-            uint256 newLockDuration = WEEK;
-            IVotingEscrow(veNFT).increase_unlock_time(_tokenId, newLockDuration);
-        }
+        // If we dont own any veNFTs yet, no merge, just keep the new veNFT as is
+        if (ownedCount == 0) return;
         
         // find a NFT that is OLDER than deposited NFT by at most 1 week!!
         for (uint256 i = 0; i < ownedCount; i++) {
