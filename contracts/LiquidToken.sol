@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import { UD60x18, ud } from "@prb/math/src/UD60x18.sol";
 import "./interfaces/IVotingEscrow.sol";
 import "./strategies/Solidly.sol"; // Import the SolidlyStrategy interface
 
@@ -45,18 +46,13 @@ contract LiquidToken is ERC20, Ownable {
      * @return The ratio in 18 decimals precision
      */
     function calculateDepositRatio(uint256 weeksRemaining) public view returns (uint256) {
-        // Ensure weeksRemaining is within bounds
-        weeksRemaining = weeksRemaining > MAX_WEEKS ? MAX_WEEKS : weeksRemaining;
-        weeksRemaining = weeksRemaining < 1 ? 1 : weeksRemaining;
+        require(weeksRemaining > 0 && weeksRemaining <= 104, 'invalid lock');
         
         // Calculate x/104 as a fraction
-        uint256 fraction = (weeksRemaining * 10**18) / MAX_WEEKS;
-        
-        // Linear approximation for k^(x/104)
-        uint256 kPowerFraction = 10**18 + ((k - 10**18) * fraction) / 10**18;
-        
-        // Divide by k to get k^(x/104 - 1)
-        return (kPowerFraction * 10**18) / k;
+        UD60x18 fraction = ud(10**18 * weeksRemaining / MAX_WEEKS);
+        UD60x18 price = ud(k);
+
+        return price.pow(fraction);
     }
 
     /**
