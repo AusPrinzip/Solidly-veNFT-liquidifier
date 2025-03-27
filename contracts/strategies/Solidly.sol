@@ -248,54 +248,65 @@ contract SolidlyStrategy {
         IVoter(voter).reset(tokenId);
     }
 
-    function _getVeNFTAgeInWeeks(uint256 _tokenId) private view returns (uint256 ageInWeeks) {
-        // uint256 lockEndTime = IVotingEscrow(veNFT).locked__end(_tokenId);
-        uint256 creationTime = IVotingEscrow(veNFT).user_point_history__ts(_tokenId, 0);
-        require(creationTime > 0, "Invalid veNFT: creation time is zero");
-        uint256 currentTime = block.timestamp;
-        uint256 timeElapsed = currentTime > creationTime ? currentTime - creationTime : 0;
-        ageInWeeks = timeElapsed / WEEK;
+    function getVeNFTExpirationInWeeks(uint256 _tokenId) private view returns (uint256 expirationInWeeks) {
+        // Get the lock end time from the veNFT contract
+        uint256 lockEndTime = IVotingEscrow(veNFT).locked__end(_tokenId);
         
-        return ageInWeeks;
+        // Ensure the lock hasn't already expired
+        require(lockEndTime > block.timestamp, "Invalid veNFT: lock already expired");
+        
+        // Calculate remaining time in seconds
+        uint256 timeRemaining = lockEndTime - block.timestamp;
+        
+        // Convert to weeks, rounded up (hence adding WEEK-1)
+        expirationInWeeks = (timeRemaining + WEEK - 1) / WEEK;
+        
+        // Ensure minimum of 1 week to prevent divide-by-zero issues elsewhere
+        expirationInWeeks = expirationInWeeks < 1 ? 1 : expirationInWeeks;
+        
+        return expirationInWeeks;
     }
 
-    function _handleDeposit(uint256 _tokenId) external onlyLiquidToken {
-        // verifyy the token is already owned by this contract
+    function handleDeposit(uint256 _tokenId) external onlyLiquidToken {
+        // Verify the token is already owned by this contract
         address tokenOwner = IVotingEscrow(veNFT).ownerOf(_tokenId);
         require(tokenOwner == address(this), "Token not owned by this contract");
         
-        // verify the token exists and get its age
-        uint256 targetAgeWeeks = _getVeNFTAgeInWeeks(_tokenId);
-        // uint256 targetLockEnd = IVotingEscrow(veNFT).locked__end(_tokenId);
+        // Get the lock end time for the deposited NFT
+        uint256 depositedLockEndTime = IVotingEscrow(veNFT).locked__end(_tokenId);
         
-        // get all veNFTs owned by this contract
+        // Ensure the lock hasn't already expired
+        require(depositedLockEndTime > block.timestamp, "Invalid veNFT: lock already expired");
+        
+        // Get all veNFTs owned by this contract
         uint256 ownedCount = IVotingEscrow(veNFT).balanceOf(address(this));
         
-        // If we dont own any veNFTs yet, no merge, just keep the new veNFT as is
+        // If we don't own any other veNFTs yet, no merge, just keep the new veNFT as is
         if (ownedCount <= 1) return;
         
-        // find a NFT that is OLDER than deposited NFT by at most 1 week!!
+        // Find a veNFT that expires within 1 week of our deposited NFT
         for (uint256 i = 0; i < ownedCount; i++) {
             uint256 currentTokenId = IVotingEscrow(veNFT).tokenOfOwnerByIndex(address(this), i);
             
             // Skip the token we just deposited
             if (currentTokenId == _tokenId) continue;
-
-            // get age of the current token
-            uint256 currentAgeWeeks = _getVeNFTAgeInWeeks(currentTokenId);
             
-            // we only consider tokens that are older than our deposit token
-            if (currentAgeWeeks > targetAgeWeeks) {
-                // Calculate age difference
-                uint256 ageDifference = currentAgeWeeks - targetAgeWeeks;
+            // Get lock end time of the current token
+            uint256 currentLockEndTime = IVotingEscrow(veNFT).locked__end(currentTokenId);
+            
+            // We only consider tokens that expire LATER than (older than) our deposit token
+            if (currentLockEndTime > depositedLockEndTime) {
+                // Calculate time difference in seconds
+                uint256 timeDifference = currentLockEndTime - depositedLockEndTime;
                 
-                // if age diference is <= 1 week, we have found our match
-                if (ageDifference <= 1) {
+                // If the difference is within 1 week, merge and exit
+                if (timeDifference <= 1 * WEEK) {
                     IVotingEscrow(veNFT).merge(currentTokenId, _tokenId);
-                    break;
+                    return; // Merge complete, exit the function
                 }
             }
         }
-        // In case no match where ageDifference <= 1, it just keeps the new veNFT "as is"
+        
+        // If we reach here, we didn't find any suitable match, so we just keep the veNFT as is
     }
 }

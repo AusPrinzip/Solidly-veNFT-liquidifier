@@ -49,21 +49,16 @@ contract LiquidToken is ERC20, Ownable {
         weeksRemaining = weeksRemaining > MAX_WEEKS ? MAX_WEEKS : weeksRemaining;
         weeksRemaining = weeksRemaining < 1 ? 1 : weeksRemaining;
         
-        // Calculate exponent: (x/104 - 1)
-        int256 exponent = int256((weeksRemaining * 10**18) / MAX_WEEKS) - 10**18;
+        // Calculate x/104 as a fraction
+        uint256 fraction = (weeksRemaining * 10**18) / MAX_WEEKS;
         
-        // Calculate k^exponent
-        // For simplicity, we're using a linear approximation for the demo
-        // In production, we would use a proper power function library
+        // Linear approximation for k^(x/104)
+        uint256 kPowerFraction = 10**18 + ((k - 10**18) * fraction) / 10**18;
         
-        // Linear approximation: 1 + (k-1) * exponent
-        if (exponent >= 0) {
-            return k + (k * uint256(exponent) / 10**18);
-        } else {
-            return k - (k * uint256(-exponent) / 10**18);
-        }
+        // Divide by k to get k^(x/104 - 1)
+        return (kPowerFraction * 10**18) / k;
     }
-    
+
     /**
      * @dev Calculates the Token/liToken ratio based on weeks remaining for redemption
      * This is the inverse of the deposit ratio
@@ -107,8 +102,8 @@ contract LiquidToken is ERC20, Ownable {
         uint256 underlyingAmount = IVotingEscrow(veNFT).balanceOfNFT(_tokenId);
         require(underlyingAmount > 0, "Invalid NFT: no locked amount");
         
-        // Calculate weeks remaining in the lock
-        uint256 weeksRemaining = (lockEndTime - block.timestamp) / WEEK;
+        // Calculate weeks remaining in the lock (rounded up)
+        uint256 weeksRemaining = (lockEndTime - block.timestamp + WEEK) / WEEK;
         weeksRemaining = weeksRemaining < 1 ? 1 : weeksRemaining;
         
         // Calculate liquid tokens to mint based on the ratio
@@ -119,7 +114,7 @@ contract LiquidToken is ERC20, Ownable {
         IVotingEscrow(veNFT).transferFrom(msg.sender, vault, _tokenId);
         
         // Call the strategy contract to handle age-bsaed merging
-        SolidlyStrategy(vault)._handleDeposit(_tokenId);
+        SolidlyStrategy(vault).handleDeposit(_tokenId);
 
         // Update total underlying locked
         totalUnderlyingLocked += underlyingAmount;
@@ -152,7 +147,7 @@ contract LiquidToken is ERC20, Ownable {
         // Calculate weeks remaining in the lock
         uint256 weeksRemaining = 0;
         if (lockEndTime > block.timestamp) {
-            weeksRemaining = (lockEndTime - block.timestamp) / WEEK;
+            weeksRemaining = (lockEndTime - block.timestamp - WEEK) / WEEK;
             weeksRemaining = weeksRemaining < 1 ? 1 : weeksRemaining;
         }
         
@@ -202,7 +197,7 @@ contract LiquidToken is ERC20, Ownable {
         if (underlyingAmount <= 0) return 0;
         
         // Calculate weeks remaining in the lock
-        uint256 weeksRemaining = (lockEndTime - block.timestamp) / WEEK;
+        uint256 weeksRemaining = (lockEndTime - block.timestamp + WEEK) / WEEK;
         weeksRemaining = weeksRemaining < 1 ? 1 : weeksRemaining;
         
         // Calculate liquid tokens to mint based on the ratio
@@ -231,7 +226,7 @@ contract LiquidToken is ERC20, Ownable {
         // Calculate weeks remaining in the lock
         uint256 weeksRemaining = 0;
         if (lockEndTime > block.timestamp) {
-            weeksRemaining = (lockEndTime - block.timestamp) / WEEK;
+            weeksRemaining = (lockEndTime - block.timestamp - WEEK) / WEEK;
             weeksRemaining = weeksRemaining < 1 ? 1 : weeksRemaining;
         }
         
