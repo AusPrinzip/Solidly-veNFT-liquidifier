@@ -58,7 +58,6 @@ contract SolidlyStrategy {
 
         MAX_TIME = _lockingYear * 364 * 86400;
         WEEK = 7 * 86400;
-        IVotingEscrow(veNFT).setApprovalForAll(liquidToken, true);
     }
 
     modifier onlyLiquidToken {
@@ -83,6 +82,7 @@ contract SolidlyStrategy {
 
     function setLiquidToken (address _liquidToken) external {
         require(liquidToken == address(0), 'addr 0');
+        IVotingEscrow(veNFT).setApprovalForAll(_liquidToken, true);
         liquidToken = _liquidToken;
     }
 

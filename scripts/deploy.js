@@ -26,7 +26,7 @@ async function main() {
     console.log(addr.THE, addr.veTHE, voter.address, rewardDistributor.address, addr.ExternalDistributor, lockingYear)
     const strategy = await deployOne("SolidlyStrategy", addr.THE, addr.veTHE, voter.address, rewardDistributor.address, addr.ExternalDistributor, lockingYear)
     console.log("LiquidToken", "LiquidToken", "liTOK", addr.veTHE, await strategy.getAddress())
-    const liquidToken = await deployOne("LiquidToken", "LiquidToken", "liTOK", addr.veTHE, await strategy.getAddress())
+    const liquidToken = await deployOne("LiquidToken", "LiquidToken", "liTOK", addr.veTHE, await strategy.getAddress(), addr.THE)
     strategy.connect(voter)
     await strategy.setLiquidToken(await liquidToken.getAddress())
 
