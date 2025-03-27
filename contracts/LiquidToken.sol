@@ -48,16 +48,12 @@ contract LiquidToken is ERC20, Ownable {
     function calculateDepositRatio(uint256 weeksRemaining) public view returns (uint256) {
         require(weeksRemaining > 0 && weeksRemaining <= 104, 'invalid lock');
             
-        // Calculate (x/104 - 1) as the exponent
         // First calculate x/104 in fixed-point
         UD60x18 fraction = ud((weeksRemaining * 10**18) / MAX_WEEKS);
         
-        // Subtract 1 from the fraction to get (x/104 - 1)
-        UD60x18 exponent = fraction.sub(ud(10**18));
-        
         // Calculate k^(x/104 - 1)
         UD60x18 price = ud(k);
-        UD60x18 result = price.pow(exponent);
+        UD60x18 result = price.pow(fraction).div(price);
         
         // Convert back to uint256
         return uint256(result.unwrap());
