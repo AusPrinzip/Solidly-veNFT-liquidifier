@@ -19,21 +19,36 @@ async function main() {
   const LiquidToken = new ethers.Contract(addr.LiquidToken, ABI_LiquidToken, deployer)
 
   try {
-    // CREATE LOCK
-
-    let balTHE = await THE.balanceOf(deployer.address)
-    console.log('THE: '+ethers.formatEther(balTHE))
-    let allowance = await THE.allowance(deployer.address, addr.veTHE)
-    if (allowance < BigInt(ONE)) {
-      console.log('Approving veTHE for 1 THE')
-      await THE.approve(addr.veTHE, ONE)
-    }
-    await veTHE.create_lock(ONE, ONE_WEEK)
 
     let nftBalance = await veTHE.balanceOf(deployer.address)
     console.log('We own '+nftBalance+' veNFTs')
 
-    
+
+    // check liTHE balance
+    let liBal = await LiquidToken.balanceOf(deployer.address)
+    console.log(ethers.formatUnits(liBal)+' liTOK')
+
+    // REDEEM NFT
+    console.log('checking approval')
+    let isApprovedForAll = await veTHE.isApprovedForAll(vault.address, addr.LiquidToken)
+    console.log(isApprovedForAll+' approval')
+    if (!isApprovedForAll) {
+      console.log('approving veTHE')
+      const veTHEVault = new ethers.Contract(addr.veTHE, ABI_veNFT, vault)
+      await veTHEVault.setApprovalForAll(addr.LiquidToken, true);
+    }
+    let tokenId = await veTHE.tokenOfOwnerByIndex(vault.address, 0)
+    console.log('redeeming tokenId: '+tokenId)
+    await LiquidToken.redeem(tokenId)
+
+    console.log('all nfts for this account:')
+    for (let i = 0; i < nftBalance; i++) {
+      let nft = await veTHE.tokenOfOwnerByIndex(deployer.address, i)
+      let nftInfo = await veTHE.locked(nft)
+      let nftBal = nftInfo[0]
+      let nftUnlock = nftInfo[1]
+      console.log(nft, nftBal, nftUnlock)
+    }
   } catch (error) {
     console.error("Error during transacting:", error);
     process.exit(1);
