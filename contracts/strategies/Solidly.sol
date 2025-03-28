@@ -129,10 +129,6 @@ contract SolidlyStrategy {
         _increaseTime(MAX_TIME);
     }
 
-    function balanceOfveNFT() public view returns (uint256) {
-        return IVotingEscrow(veNFT).balanceOfNFT(tokenId);
-    }
-
     /*    
         -------------------
         VOTING AND CLAIMING
@@ -200,19 +196,24 @@ contract SolidlyStrategy {
 
     /**
      * @dev Splits the main veNFT and transfers the new NFT to the specified recipient
+     * @param _tokenId veNFT identifier 
      * @param _amountToSplit The amount of underlying tokens to split off
      * @param _recipient The address to receive the split NFT
      * @return newTokenId The ID of the new NFT created by the split
      */
-    function splitAndSend(uint256 _amountToSplit, address _recipient) external onlyLiquidToken returns (uint256 newTokenId) {
+    function splitAndSend(uint256 _tokenId, uint256 _amountToSplit, address _recipient) external onlyLiquidToken returns (uint256 newTokenId) {
         // Get the current balance of the main veNFT
-        uint256 totalBalance = balanceOfveNFT();
+        uint256 totalBalance = uint256(uint128(IVotingEscrow(veNFT).locked(_tokenId).amount));
         
         // Ensure we're not trying to split more than available
         require(_amountToSplit > 0 && _amountToSplit < totalBalance, "Invalid split amount");
         
-        // Calculate remaining balance after split
+        // Make sure the resulting split is meaningful (at least 1% of the total)
+        require(_amountToSplit >= totalBalance / 100, "Split amount too small");
+        
+        // Make sure the remaining amount is also meaningful
         uint256 remainingBalance = totalBalance - _amountToSplit;
+        require(remainingBalance >= totalBalance / 100, "Remaining amount too small");
         
         // Prepare the amounts array for the split
         uint256[] memory amounts = new uint256[](2);
@@ -223,25 +224,28 @@ contract SolidlyStrategy {
         uint256 nftCountBefore = IVotingEscrow(veNFT).balanceOf(address(this));
         
         // Execute the split
-        IVotingEscrow(veNFT).split(amounts, tokenId);
-        
-        // Count NFTs after split
-        uint256 nftCountAfter = IVotingEscrow(veNFT).balanceOf(address(this));
-        
-        // Verify split was successful
-        require(nftCountAfter == nftCountBefore + 1, "Split failed");
-        
-        // Get the IDs of the NFTs after split
-        // The original tokenId remains with the first amount, and a new NFT is created for the second amount
-        uint256 newNftIndex = nftCountAfter - 1; // Index of the newly created NFT
-        newTokenId = IVotingEscrow(veNFT).tokenOfOwnerByIndex(address(this), newNftIndex);
-        
-        // Transfer the new NFT to the recipient
-        IVotingEscrow(veNFT).transferFrom(address(this), _recipient, newTokenId);
-        
-        emit Split(tokenId, _amountToSplit, _recipient);
-        
-        return newTokenId;
+        try IVotingEscrow(veNFT).split(amounts, _tokenId) {
+            // Count NFTs after split
+            uint256 nftCountAfter = IVotingEscrow(veNFT).balanceOf(address(this));
+            
+            // Verify split was successful
+            require(nftCountAfter == nftCountBefore + 1, "Split failed");
+            
+            // Get the IDs of the NFTs after split
+            // The original tokenId remains with the first amount, and a new NFT is created for the second amount
+            uint256 newNftIndex = nftCountAfter - 1; // Index of the newly created NFT
+            newTokenId = IVotingEscrow(veNFT).tokenOfOwnerByIndex(address(this), newNftIndex);
+            
+            // Transfer the new NFT to the recipient
+            IVotingEscrow(veNFT).transferFrom(address(this), _recipient, newTokenId);
+            
+            emit Split(_tokenId, _amountToSplit, _recipient);
+            
+            return newTokenId;
+        } catch {
+            // If the split fails, revert with a clearer message
+            revert("NFT split operation failed - check your vesting contract's requirements");
+        }
     }
 
     function resetVote() external onlyVoter {

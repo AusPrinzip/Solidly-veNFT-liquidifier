@@ -52,7 +52,8 @@ interface IVotingEscrow is IERC721, IERC721Metadata, IVotes {
     /*//////////////////////////////////////////////////////////////
                              VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
+    
+    function locked(uint id) external view returns(LockedBalance memory);
     function token() external view returns (address);
     function voter() external view returns (address);
     function team() external view returns (address);

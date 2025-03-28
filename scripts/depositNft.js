@@ -41,12 +41,15 @@ async function main() {
     console.log('Lock end time OK:', lockEndTime > Math.floor(Date.now() / 1000));
 
     // Step 1b: check expiry
-    const expiresInWeeks = (lockEndTime - Date.now()) / ONE_WEEK;
-    console.log(`veNFT expires in ${expiresInWeeks}`)
+    const latestBlock = await ethers.provider.getBlock("latest");
+    const blockTime = latestBlock.timestamp;
+    let expiresInWeeks = (Number(lockEndTime) - blockTime) / ONE_WEEK;
+    expiresInWeeks = expiresInWeeks < 1 ? 1 : Math.round(expiresInWeeks)
+    console.log(`veNFT expires in ${expiresInWeeks.toFixed(2)} weeks`);
 
     // Step 2: Check underlying amount
-    const amount = await veTHE.balanceOfNFT(tokenId);
-    console.log('Underlying amount:', amount.toString());
+    const amount = await veTHE.locked(tokenId).then(res => res[0]);
+    console.log('Underlying amount:', ethers.formatUnits(amount, 18));
     console.log('Underlying amount OK:', amount.toString() !== '0');
 
     // Step 3: Try to get veNFT interface data - this might reveal any issues
@@ -59,6 +62,12 @@ async function main() {
     // Preview the deposit to see how many liTokens we should receive
     const previewAmount = await LiquidToken.previewDeposit(tokenId);
     console.log('Preview liToken amount:', ethers.formatUnits(previewAmount));
+
+    // Calculate ratio
+    const ratio = await LiquidToken.calculateDepositRatio(expiresInWeeks)
+    // Format the ratio with ethers.formatUnits to preserve decimal places
+    const ratioFormatted = ethers.formatUnits(ratio, 18)
+    console.log(`Exchange ratio: ${ratioFormatted} liToken/Token`)
 
     // Deposit the NFT
     console.log('Depositing NFT...');
@@ -74,9 +83,6 @@ async function main() {
     const actualReceived = newLiBalance - initialLiBalance;
     console.log('Actual received liTokens:', ethers.formatUnits(actualReceived));
 
-    // Calculate ratio
-    const ratio = await LiquidToken.calculateDepositRatio(expiresInWeeks)
-    console.log(`Exchange ratio: ${ratio} liToken/Token`)
     // Compare preview with actual received amount
     const difference = actualReceived - previewAmount;
     const percentDifferenceBigInt = (difference * 10000n) / previewAmount;

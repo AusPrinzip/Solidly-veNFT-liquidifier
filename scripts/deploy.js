@@ -30,6 +30,16 @@ async function main() {
     strategy.connect(voter)
     await strategy.setLiquidToken(await liquidToken.getAddress())
 
+    // Set k value to 0.75 (0.75 * 10^18 in wei)
+    const newK = ethers.parseEther("0.75"); // 0.75 * 10^18
+    console.log(`Setting k value to: ${ethers.formatEther(newK)} (${newK.toString()} wei)`);
+    await liquidToken.updateK(newK);
+    
+    // Verify the k value was set correctly
+    const currentK = await liquidToken.k();
+    console.log(`Current k value: ${ethers.formatEther(currentK)} (${currentK.toString()} wei)`);
+
+
   } catch (error) {
     console.error("Error during deployment:", error);
     process.exit(1);

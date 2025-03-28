@@ -18,7 +18,7 @@ const config: HardhatUserConfig = {
       currency: "VBNB"
     },
     vbnb2: {
-      url: "https://virtual.binance.rpc.tenderly.co/54efcdd7-a79e-4f4e-ada9-e16ed7f6b303",
+      url: "https://virtual.binance.rpc.tenderly.co/fe223952-6653-4df0-b321-d3cf82288f4f",
       chainId: 5656,
       currency: "VBNB"
     }
