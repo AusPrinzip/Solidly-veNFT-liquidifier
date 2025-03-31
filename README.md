@@ -18,9 +18,9 @@
 
 ## Overview
 
-Liquidao is a decentralized protocol designed to solve the liquidity-locking dilemma in DeFi. By enabling users to "liquidify" their time-locked vesting NFTs (vNFTs), our protocol creates a circular economy that benefits both vNFT holders seeking liquidity and traders seeking flexible exposure to underlying tokens while maintaining access to governance rewards.
+This is a decentralized protocol designed to solve the liquidity-locking dilemma in DeFi. By enabling users to "liquidify" their time-locked vesting NFTs (vNFTs), our protocol creates a circular economy that benefits both vNFT holders seeking liquidity and traders seeking flexible exposure to underlying tokens while maintaining access to governance rewards.
 
-Inspired by abacus.tech, Liquidao builds upon innovative DeFi concepts to create a solution specifically tailored for time-locked assets in Solidly-based ecosystems.
+Inspired by abacus.tech, it builds upon innovative DeFi concepts to create a solution specifically tailored for time-locked assets in Solidly-based ecosystems.
 
 ### The Problem
 
@@ -28,7 +28,7 @@ In many DeFi protocols, particularly those built on the Solidly framework (Thena
 
 ### The Solution
 
-Liquidao solves this dilemma by creating liquid wrapper tokens (e.g., liVeTHENA for THENA vNFTs) that represent the value of vested tokens while providing immediate liquidity. This novel approach maintains the benefits of vesting while eliminating its primary drawback.
+It solves this dilemma by creating liquid wrapper tokens (e.g., liVeTHENA for THENA vNFTs) that represent the value of vested tokens while providing immediate liquidity. This novel approach maintains the benefits of vesting while eliminating its primary drawback.
 
 ## Features
 
@@ -50,7 +50,7 @@ Liquidao solves this dilemma by creating liquid wrapper tokens (e.g., liVeTHENA 
 
 ### Liquidification Process
 
-1. User deposits their vNFT into the Liquidao platform
+1. User deposits their vNFT into the liquidifier platform
 2. Platform merges the user's vNFT with a "community vNFT" with a similar expiration date
 3. User receives liquid tokens (e.g., liVeTHENA) equivalent to their underlying token amount, multiplied by the deposit ratio based on remaining lock time
 4. The merged vNFT becomes part of the community pool
@@ -89,7 +89,7 @@ Users who purchase liquid tokens (e.g., liVeTHENA) can exchange them for underly
 
 ## Supported Ecosystems
 
-Liquidao is designed to work with any Solidly-based protocol, including:
+It is designed to work with any Solidly-based protocol, including:
 
 - Thena
 - Aerodrome
@@ -108,7 +108,7 @@ The platform generates revenue through:
 
 ### Circular Economy
 
-Liquidao creates a self-sustaining circular economy:
+It creates a self-sustaining circular economy:
 
 1. vNFT holders deposit for liquidity, receiving liquid tokens based on the deposit ratio
 2. The platform gains voting power from accumulated vNFTs
@@ -133,7 +133,7 @@ This project is licensed under the [MIT License](LICENSE).
 ## Contact
 
 - Website: [lightproject](https://lightproject.me)
-- Twitter: [@LiquidaoFinance](https://twitter.com/lightproject)
+- Twitter: [@lightproject4](https://twitter.com/lightproject)
 - Email: contact@lightproject.me
 
 ---
