@@ -1,13 +1,140 @@
-# Sample Hardhat Project
+# Solidly veNFT liquidifier
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+<p align="center">
+  <strong>Unlocking Liquidity for Time-Locked DeFi Assets</strong>
+</p>
 
-Try running some of the following tasks:
+<p align="center">
+  <a href="#overview">Overview</a> •
+  <a href="#features">Features</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#use-cases">Use Cases</a> •
+  <a href="#supported-ecosystems">Supported Ecosystems</a> •
+  <a href="#tokenomics">Tokenomics</a> •
+  <a href="#security">Security</a> •
+  <a href="#contributing">Contributing</a> •
+  <a href="#license">License</a>
+</p>
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.ts
-```
+## Overview
+
+Liquidao is a decentralized protocol designed to solve the liquidity-locking dilemma in DeFi. By enabling users to "liquidify" their time-locked vesting NFTs (vNFTs), our protocol creates a circular economy that benefits both vNFT holders seeking liquidity and traders seeking flexible exposure to underlying tokens while maintaining access to governance rewards.
+
+Inspired by abacus.tech, Liquidao builds upon innovative DeFi concepts to create a solution specifically tailored for time-locked assets in Solidly-based ecosystems.
+
+### The Problem
+
+In many DeFi protocols, particularly those built on the Solidly framework (Thena, Aerodrome, Curve, Pendle, etc.), users lock their tokens for extended periods to receive vNFTs. While these vNFTs provide governance rights and enhanced rewards, they create an opportunity cost through illiquidity.
+
+### The Solution
+
+Liquidao solves this dilemma by creating liquid wrapper tokens (e.g., liVeTHENA for THENA vNFTs) that represent the value of vested tokens while providing immediate liquidity. This novel approach maintains the benefits of vesting while eliminating its primary drawback.
+
+## Features
+
+- **Immediate Liquidity**: Convert time-locked vNFTs into liquid tokens instantly
+- **Time-Adjusted Valuation**: Mathematically sound parabolic model for fair pricing
+- **Governance Participation**: Maintain exposure to voting rewards through staking
+- **Circular Economy**: Self-sustaining system with aligned incentives
+- **Protocol Compatibility**: Works with any Solidly-based ecosystem
+- **Transparent Mechanics**: All conversion ratios are formula-based and verifiable
+
+## How It Works
+
+### Core Components
+
+- **vNFTs**: Time-locked NFTs representing vested tokens (e.g., veTHENA)
+- **Liquid Tokens**: Wrapper tokens representing liquidified vNFTs (e.g., liVeTHENA)
+- **Community vNFT Pool**: Protocol-managed pool of merged vNFTs
+- **Reward Distribution System**: Mechanism for distributing voting rewards to staked liquid token holders
+
+### Liquidification Process
+
+1. User deposits their vNFT into the Liquidao platform
+2. Platform merges the user's vNFT with a "community vNFT" with a similar expiration date
+3. User receives liquid tokens (e.g., liVeTHENA) equivalent to their underlying token amount, multiplied by the deposit ratio based on remaining lock time
+4. The merged vNFT becomes part of the community pool
+
+### Token Ratio Mechanics
+
+The protocol implements a parabolic model for the liToken/Token ratio:
+
+- **Deposit NFT Ratio**: When depositing a vNFT with x weeks remaining, the ratio is calculated as f(x) = k^(x/104 - 1), where k is the current market price of liToken at week 0
+- **Redeem NFT Ratio**: When redeeming liTokens for underlying tokens, the ratio is the inverse of the deposit ratio, but calculated at x-1 weeks, creating a built-in "loop fee"
+- **Time Range**: The model functions across the full vesting period range of 1 to 104 weeks (2 years)
+
+### Redemption Mechanism
+
+Users who purchase liquid tokens (e.g., liVeTHENA) can exchange them for underlying tokens (e.g., THENA) through market swapping:
+
+- Integrated DEX pools connect liquid tokens with underlying tokens
+- Users can swap liquid tokens for underlying tokens at any time without waiting for specific expiration dates
+- Pricing reflects the time-adjusted value of the locked tokens, following the redemption ratio formula
+
+## Use Cases
+
+### For vNFT Holders
+
+- **Access Immediate Liquidity**: Convert time-locked assets to liquid tokens
+- **Portfolio Rebalancing**: Adjust exposure without sacrificing vesting benefits
+- **Emergency Exit**: Access funds when needed without penalty
+- **Strategic Management**: Optimize lock periods and liquidity needs
+
+### For Liquid Token Holders
+
+- **Flexible Exposure**: Gain exposure to underlying tokens without lock-up
+- **Staking Rewards**: Earn rewards from vNFT voting power
+- **Arbitrage Opportunities**: Capitalize on market inefficiencies between liquid tokens and underlying assets
+- **Low Barrier to Entry**: Participate in vNFT ecosystems without minimum investment constraints
+
+## Supported Ecosystems
+
+Liquidao is designed to work with any Solidly-based protocol, including:
+
+- Thena
+- Aerodrome
+- Curve
+- Pendle
+- Other Solidly forks with vNFT mechanics
+
+## Tokenomics
+
+### Fee Structure
+
+The platform generates revenue through:
+- Direct fees from the liquidification process
+- Share of voting rewards generated by the community vNFT pool
+- Natural "loop fee" from the x-1 redemption ratio mechanism
+
+### Circular Economy
+
+Liquidao creates a self-sustaining circular economy:
+
+1. vNFT holders deposit for liquidity, receiving liquid tokens based on the deposit ratio
+2. The platform gains voting power from accumulated vNFTs
+3. Voting power generates rewards through protocol incentives
+4. Rewards are distributed to staked liquid token holders
+5. As vNFTs expire, tokens flow back into the system according to the redemption ratio
+
+## Contributing
+
+We welcome contributions from the community! To contribute:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Contact
+
+- Website: [lightproject](https://lightproject.me)
+- Twitter: [@LiquidaoFinance](https://twitter.com/lightproject)
+- Email: contact@lightproject.me
+
+---
+
